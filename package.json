@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --timeout 20000 --recursive --exclude '**/node_modules/**' '**/*.test.js' --exit"
+    "test": "mocha --timeout 20000 --recursive --exclude '**/node_modules/**' '**/*.test.js' --exit",
+    "test:auth": "cd auth && npm test",
+    "test:product": "cd product && npm test",
+    "setup": "bash setup.sh",
+    "start:all": "bash start-services.sh"
   },
   "keywords": [],
   "author": "",

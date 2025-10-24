@@ -350,54 +350,41 @@ lsof -i :3000  # thay 3000 bằng port cần check
 kill -9 <PID>
 ```
 
-## CI/CD với GitHub Actions
+## CI/CD với GitHub Actions và Docker
 
 Dự án hỗ trợ CI/CD với GitHub Actions (Mục 9-10 trong phiếu sát hạch).
 
-Tạo file `.github/workflows/ci-cd.yml`:
+File `.github/workflows/docker-ci.yml` đã được tạo sẵn để:
+1. Build Docker images cho tất cả services
+2. Test với Docker Compose
+3. Verify tất cả services hoạt động
 
-```yaml
-name: CI/CD Pipeline
+### Setup GitHub Secrets:
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+Vào Settings > Secrets and variables > Actions, thêm:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-
-    - name: Install dependencies
-      run: |
-        cd auth && npm install
-        cd ../product && npm install
-        cd ../order && npm install
-        cd ../api-gateway && npm install
-
-    - name: Run tests
-      run: npm test
-      env:
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-```
+Mỗi lần push code lên GitHub, workflow sẽ tự động:
+1. Build Docker images
+2. Start services với Docker Compose
+3. Kiểm tra logs
+4. Stop services
 
 ## Ưu Điểm So Với Bản Cũ
 
 ✅ **Không cần MongoDB** - Dùng Supabase có sẵn
 ✅ **Không cần RabbitMQ** - Đơn giản hóa communication
-✅ **Chỉ cần Node.js** - Dễ setup và chạy
+✅ **Hỗ trợ Docker** - Chạy dễ dàng trên Windows
 ✅ **Có endpoint GET /api/products/:id** - Đáp ứng mục 8
+✅ **CI/CD với Docker** - GitHub Actions tích hợp Docker
 ✅ **Chạy được ngay** - Không cần cài đặt phức tạp
+
+## Tài Liệu Bổ Sung
+
+- [DOCKER-GUIDE.md](./DOCKER-GUIDE.md) - Hướng dẫn chi tiết chạy với Docker trên Windows
+- [SETUP-GUIDE.md](./SETUP-GUIDE.md) - Hướng dẫn setup thông thường
+- [TEST-GUIDE.md](./TEST-GUIDE.md) - Hướng dẫn test với POSTMAN
 
 ## Tác Giả
 

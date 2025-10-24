@@ -1,82 +1,75 @@
 const express = require("express");
-const mongoose = require("mongoose");
-const Order = require("./models/order");
-const amqp = require("amqplib");
-const config = require("./config");
+const supabase = require("./config/supabase");
+require('dotenv').config();
 
 class App {
   constructor() {
     this.app = express();
-    this.connectDB();
-    this.setupOrderConsumer();
+    this.setMiddlewares();
+    this.setRoutes();
   }
 
   async connectDB() {
-    await mongoose.connect(config.mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("MongoDB connected");
+    console.log("Using Supabase - no connection needed");
   }
 
   async disconnectDB() {
-    await mongoose.disconnect();
-    console.log("MongoDB disconnected");
+    console.log("Supabase - no disconnection needed");
   }
 
-  async setupOrderConsumer() {
-    console.log("Connecting to RabbitMQ...");
-  
-    setTimeout(async () => {
+  setMiddlewares() {
+    this.app.use(express.json());
+    this.app.use(express.urlencoded({ extended: false }));
+  }
+
+  setRoutes() {
+    this.app.get("/api/orders", async (req, res) => {
       try {
-        const amqpServer = "amqp://rabbitmq:5672";
-        const connection = await amqp.connect(amqpServer);
-        console.log("Connected to RabbitMQ");
-        const channel = await connection.createChannel();
-        await channel.assertQueue("orders");
-  
-        channel.consume("orders", async (data) => {
-          // Consume messages from the order queue on buy
-          console.log("Consuming ORDER service");
-          const { products, username, orderId } = JSON.parse(data.content);
-  
-          const newOrder = new Order({
-            products,
-            user: username,
-            totalPrice: products.reduce((acc, product) => acc + product.price, 0),
-          });
-  
-          // Save order to DB
-          await newOrder.save();
-  
-          // Send ACK to ORDER service
-          channel.ack(data);
-          console.log("Order saved to DB and ACK sent to ORDER queue");
-  
-          // Send fulfilled order to PRODUCTS service
-          // Include orderId in the message
-          const { user, products: savedProducts, totalPrice } = newOrder.toJSON();
-          channel.sendToQueue(
-            "products",
-            Buffer.from(JSON.stringify({ orderId, user, products: savedProducts, totalPrice }))
-          );
-        });
-      } catch (err) {
-        console.error("Failed to connect to RabbitMQ:", err.message);
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        res.json(data);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
       }
-    }, 10000); // add a delay to wait for RabbitMQ to start in docker-compose
+    });
+
+    this.app.get("/api/orders/:id", async (req, res) => {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('id', req.params.id)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (!data) {
+          return res.status(404).json({ message: "Order not found" });
+        }
+        res.json(data);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
   }
 
-
+  setupOrderConsumer() {
+    console.log("Order service using direct database - no message broker needed");
+  }
 
   start() {
-    this.server = this.app.listen(config.port, () =>
-      console.log(`Server started on port ${config.port}`)
+    const port = process.env.PORT || 3002;
+    this.server = this.app.listen(port, () =>
+      console.log(`Order Service started on port ${port}`)
     );
   }
 
   async stop() {
-    await mongoose.disconnect();
     this.server.close();
     console.log("Server stopped");
   }

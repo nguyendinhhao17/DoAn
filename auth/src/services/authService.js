@@ -2,7 +2,6 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const UserRepository = require("../repositories/userRepository");
 const config = require("../config");
-const User = require("../models/user");
 
 /**
  * Class to hold the business logic for the auth service interacting with the user repository
@@ -13,7 +12,7 @@ class AuthService {
   }
 
   async findUserByUsername(username) {
-    const user = await User.findOne({ username });
+    const user = await this.userRepository.getUserByUsername(username);
     return user;
   }
 
@@ -30,7 +29,7 @@ class AuthService {
       return { success: false, message: "Invalid username or password" };
     }
 
-    const token = jwt.sign({ id: user._id }, config.jwtSecret);
+    const token = jwt.sign({ id: user.id, username: user.username }, config.jwtSecret);
 
     return { success: true, token };
   }
@@ -43,8 +42,7 @@ class AuthService {
   }
 
   async deleteTestUsers() {
-    // Delete all users with a username that starts with "test"
-    await User.deleteMany({ username: /^test/ });
+    await this.userRepository.deleteTestUsers();
   }
 }
 

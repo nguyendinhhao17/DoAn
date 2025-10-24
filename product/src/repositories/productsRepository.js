@@ -1,30 +1,51 @@
-const mongoose = require("mongoose");
-
-/**
- * Class that contains the business logic for the product repository interacting with the product model
- */
-const productSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  description: { type: String, required: true },
-  price: { type: Number, required: true },
-});
-
-const Product = mongoose.model("Product", productSchema);
+const supabase = require('../config/supabase');
 
 class ProductsRepository {
-  async create(product) {
-    const createdProduct = await Product.create(product);
-    return createdProduct.toObject();
+  async create(product, userId) {
+    const { data, error } = await supabase
+      .from('products')
+      .insert([{
+        name: product.name,
+        description: product.description || '',
+        price: product.price,
+        created_by: userId
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async findById(productId) {
-    const product = await Product.findById(productId).lean();
-    return product;
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', productId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
   }
 
   async findAll() {
-    const products = await Product.find().lean();
-    return products;
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async findByIds(ids) {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .in('id', ids);
+
+    if (error) throw error;
+    return data || [];
   }
 }
 

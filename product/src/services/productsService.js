@@ -1,15 +1,12 @@
-const ProductsRepository = require(".repositories/productsRepository");
+const ProductsRepository = require("../repositories/productsRepository");
 
-/**
- * Class that ties together the business logic and the data access layer
- */
 class ProductsService {
   constructor() {
     this.productsRepository = new ProductsRepository();
   }
 
-  async createProduct(product) {
-    const createdProduct = await this.productsRepository.create(product);
+  async createProduct(product, userId) {
+    const createdProduct = await this.productsRepository.create(product, userId);
     return createdProduct;
   }
 
@@ -20,6 +17,11 @@ class ProductsService {
 
   async getProducts() {
     const products = await this.productsRepository.findAll();
+    return products;
+  }
+
+  async getProductsByIds(ids) {
+    const products = await this.productsRepository.findByIds(ids);
     return products;
   }
 }

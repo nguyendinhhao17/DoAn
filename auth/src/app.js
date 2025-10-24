@@ -1,6 +1,4 @@
 const express = require("express");
-const mongoose = require("mongoose");
-const config = require("./config");
 const authMiddleware = require("./middlewares/authMiddleware");
 const AuthController = require("./controllers/authController");
 
@@ -8,22 +6,16 @@ class App {
   constructor() {
     this.app = express();
     this.authController = new AuthController();
-    this.connectDB();
     this.setMiddlewares();
     this.setRoutes();
   }
 
   async connectDB() {
-    await mongoose.connect(config.mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("MongoDB connected");
+    console.log("Using Supabase - no connection needed");
   }
 
   async disconnectDB() {
-    await mongoose.disconnect();
-    console.log("MongoDB disconnected");
+    console.log("Supabase - no disconnection needed");
   }
 
   setMiddlewares() {
@@ -42,7 +34,6 @@ class App {
   }
 
   async stop() {
-    await mongoose.disconnect();
     this.server.close();
     console.log("Server stopped");
   }
